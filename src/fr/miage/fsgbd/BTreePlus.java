@@ -1,6 +1,7 @@
 package fr.miage.fsgbd;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.util.Objects;
 
 
 /**
@@ -40,10 +41,10 @@ public class BTreePlus<Type> implements java.io.Serializable {
     }
 
 
-    public boolean addValeur(Type valeur) {
+    public boolean addValeur(Type valeur, int positionLigne) {
         System.out.println("Ajout de la valeur : " + valeur.toString());
         if (racine.contient(valeur) == null) {
-            Noeud<Type> newRacine = racine.addValeur(valeur);
+            Noeud<Type> newRacine = racine.addValeur(valeur, positionLigne);
             if (racine != newRacine)
                 racine = newRacine;
             return true;
@@ -59,5 +60,18 @@ public class BTreePlus<Type> implements java.io.Serializable {
             if (racine != newRacine)
                 racine = newRacine;
         }
+    }
+
+    /*
+        Rechercher par index la clef indiquée
+     */
+    public boolean rechercheParIndex(Type clef){
+        Noeud<Type> noeudTrouve = this.racine.contient(clef);
+
+        if(Objects.nonNull(noeudTrouve) && Objects.nonNull(noeudTrouve.pointeursClefPositionLigne.get(clef))){
+            return true;
+        }
+
+        return false;
     }
 }

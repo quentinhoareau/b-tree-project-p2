@@ -1,6 +1,8 @@
 package fr.miage.fsgbd;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Objects;
 
 
 /*
@@ -10,6 +12,7 @@ import java.util.ArrayList;
  */
 public class Noeud<Type> implements java.io.Serializable {
 
+    public HashMap<Type, Integer> pointeursClefPositionLigne = new HashMap<>();
 
     // Collection des Noeuds enfants du noeud courant
     public ArrayList<Noeud<Type>> fils = new ArrayList<Noeud<Type>>();
@@ -124,12 +127,13 @@ public class Noeud<Type> implements java.io.Serializable {
      * Ins�re une clef dans le noeud courant
      * @param valeur � ajouter aux clefs du noeud courant
      */
-    private void insert(Type valeur) {
+    private void insert(Type valeur, int ligne) {
         int i = 0;
         while ((this.keys.size() > i) && compare(this.keys.get(i), valeur)) {
             i++;
         }
         this.keys.add(i, valeur);
+        pointeursClefPositionLigne.put(valeur, ligne);
     }
 
     /**
@@ -158,8 +162,8 @@ public class Noeud<Type> implements java.io.Serializable {
      *
      */
 
-    public Noeud<Type> addValeur(Type nouvelleValeur) {
-        Noeud<Type> racine = addValeur(nouvelleValeur, false);
+    public Noeud<Type> addValeur(Type nouvelleValeur, int ligne) {
+        Noeud<Type> racine = addValeur(nouvelleValeur, false, ligne);
         return racine;
     }
 
@@ -251,7 +255,7 @@ public class Noeud<Type> implements java.io.Serializable {
                         // On prend la derni�re clef
                         remplacant = precedent.keys.get(precedent.keys.size()-1);
                         // On l'ajoute au noeud courant
-                        noeud.addValeur(remplacant, true);
+                        noeud.addValeur(remplacant, true, precedent.pointeursClefPositionLigne.get(remplacant));
                         // Et on la retire des clefs du noeud pr�c�dent
                         precedent.keys.remove(remplacant);
                         // Et on remplace la valeur qu'on a effac� par la valeur qui a pris sa place
@@ -289,7 +293,7 @@ public class Noeud<Type> implements java.io.Serializable {
                             for (Type key : keyz)
                             {
                                 if (racine.contient(valeur) == null) {
-                                    Noeud<Type> newRacine = racine.addValeur(key);
+                                    Noeud<Type> newRacine = racine.addValeur(key, 0);
                                     if (racine != newRacine)
                                         racine = newRacine;
                                 }
@@ -325,7 +329,7 @@ public class Noeud<Type> implements java.io.Serializable {
                 for (Type key : keyz)
                 {
                     if (racine.contient(valeur) == null) {
-                        Noeud<Type> newRacine = racine.addValeur(key);
+                        Noeud<Type> newRacine = racine.addValeur(key,0);
                         if (racine != newRacine)
                             racine = newRacine;
                     }
@@ -424,7 +428,7 @@ public class Noeud<Type> implements java.io.Serializable {
      * @param force, bool�en sp�cificiant que l'on doit ajouter au noeud courant et non pas chercher l'endroit o� ins�rer la nouvelle valeur
      * @return la <Noeud>racine</Noeud> de l'arbre
      */
-    public Noeud<Type> addValeur(Type nouvelleValeur, boolean force) {
+    public Noeud<Type> addValeur(Type nouvelleValeur, boolean force, int ligne) {
 
         // Initialisation des variables
         Noeud<Type> noeud, racine = this;
@@ -456,7 +460,7 @@ public class Noeud<Type> implements java.io.Serializable {
                 Noeud<Type> noeudDroit = new Noeud<Type>(u, compar, null);
 
                 // On ins�re la valeur comme nouvelle clef du noeud courant
-                noeud.insert(nouvelleValeur);
+                noeud.insert(nouvelleValeur, ligne);
                 tailleListe++;
 
                 // On v�rifie le nombre de clefs dans le noeud courant pour savoir si on a une clef centrale ou si la m�diane se trouve entre deux clefs
@@ -470,15 +474,15 @@ public class Noeud<Type> implements java.io.Serializable {
 
                 // On utilise un appel r�cursif pour ajouter au noeud gauche, les clefs du noeud courant
                 for (int i = 0; i < indexMedian; i++)
-                    noeudGauche.addValeur(noeud.keys.get(i));
+                    noeudGauche.addValeur(noeud.keys.get(i), noeud.pointeursClefPositionLigne.get(noeud.keys.get(i)));
 
                 // Puis on fait de m�me avec le noeud droit sans traiter la clef centrale si le noeud courant a des fils
                 if (!noeud.fils.isEmpty()) {
                     for (int i = indexMedian + 1; i < tailleListe; i++)
-                        noeudDroit.addValeur(noeud.keys.get(i));
+                        noeudDroit.addValeur(noeud.keys.get(i), noeud.pointeursClefPositionLigne.get(noeud.keys.get(i)));
                 } else {
                     for (int i = indexMedian; i < tailleListe; i++)
-                        noeudDroit.addValeur(noeud.keys.get(i));
+                        noeudDroit.addValeur(noeud.keys.get(i), noeud.pointeursClefPositionLigne.get(noeud.keys.get(i)));
                 }
 
                 // Ensuite, si le noeud courant a des fils
@@ -510,7 +514,7 @@ public class Noeud<Type> implements java.io.Serializable {
                     noeudDroit.parent = nouveauParent;
 
                     // Et on rajoute dans les clefs du nouveau parent l'ancienne clef "centrale"
-                    nouveauParent.addValeur(eleMedian, true);
+                    nouveauParent.addValeur(eleMedian, true,noeud.pointeursClefPositionLigne.get(eleMedian));
 
                     // On modifie alors la racine pour faire de notre nouveau noeud, la racine de l'arbre
                     racine = nouveauParent;
@@ -525,13 +529,27 @@ public class Noeud<Type> implements java.io.Serializable {
                     noeud.parent.removeNoeud(noeud);
 
                     // Et on fini par ajouter l'�l�ment m�dian laiss� de c�t� plus t�t au parent du noeud courant ( on remonte la clef dans le parent )
-                    racine = noeud.parent.addValeur(eleMedian, true);
+                    racine = noeud.parent.addValeur(eleMedian, true, noeud.pointeursClefPositionLigne.get(eleMedian));
                 }
 
             } else // Si le nombre de clefs dans le noeud n'est pas au max, on ajoute simplement la clef au noeud courant
-                noeud.insert(nouvelleValeur);
+                noeud.insert(nouvelleValeur, ligne);
         }
 
         return racine;
+    }
+
+    /*
+        Obtient la feuille suivante du noeud actuel
+     */
+    public Noeud<Type> getFeuilleSuivante(){
+        Noeud<Type> noeudSuivant = getNoeudSuivant();
+
+        while (Objects.nonNull(noeudSuivant)){
+            if(noeudSuivant.keys.size() > 0 &&  noeudSuivant.fils.size() == 0) return noeudSuivant;
+            noeudSuivant = noeudSuivant.getNoeudSuivant();
+        }
+
+        return null;
     }
 }
